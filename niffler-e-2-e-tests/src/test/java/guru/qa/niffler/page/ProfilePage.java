@@ -2,6 +2,8 @@ package guru.qa.niffler.page;
 
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.codeborne.selenide.collections.AnyMatch;
+import com.codeborne.selenide.collections.NoneMatch;
 
 import static com.codeborne.selenide.Selenide.*;
 
@@ -15,10 +17,28 @@ public class ProfilePage {
     private final SelenideElement showArchivedCheckbox = $("[type='checkbox']");
     private final SelenideElement categoryInput = $("#category");
     private final ElementsCollection categoryLabels = $$(".MuiChip-label");
-    private final SelenideElement editCategoryBtn = $("[aria-label='Edit category']");
-    private final SelenideElement editCategoryErrorSpan = $("span.input__helper-text");
-    private final SelenideElement archiveCategoryBtn = $("[aria-label='Archive category']");
     private final SelenideElement successAlert = $(".MuiAlert-standardSuccess");
+
+    public static class CategoryItem {
+
+        private final SelenideElement category;
+        private final SelenideElement editCategoryBtn;
+        private final SelenideElement editCategoryErrorSpan;
+        private final SelenideElement archiveCategoryBtn;
+
+        public CategoryItem(SelenideElement category) {
+            this.category = category;
+            this.editCategoryBtn = category.$("[aria-label='Edit category']");
+            this.editCategoryErrorSpan = category.$("span.input__helper-text");
+            this.archiveCategoryBtn = category.$("[aria-label='Archive category']");
+        }
+
+        public ArchiveCategoryConfirmationPopup clickArchiveCategoryBtn() {
+            archiveCategoryBtn.click();
+            return new ArchiveCategoryConfirmationPopup();
+        }
+
+    }
 
     public static class ArchiveCategoryConfirmationPopup {
 
@@ -26,6 +46,47 @@ public class ProfilePage {
         private final SelenideElement closeBtn = popup.$x(".//*[contains(text(),'Close')]");
         private final SelenideElement archiveBtn = popup.$x(".//*[contains(text(),'Archive')]");
 
+        public ArchiveCategoryConfirmationPopup clickArchiveBtn() {
+            archiveBtn.click();
+            return this;
+        }
+
+    }
+
+    public ProfilePage clickShowArchivedCheckbox() {
+        showArchivedCheckbox.click();
+        return this;
+    }
+
+    public ProfilePage createCategory(String categoryName) {
+        categoryInput.setValue(categoryName);
+        categoryInput.pressEnter();
+        return this;
+    }
+
+    public ProfilePage categoriesShouldHaveLabel(String categoryName) {
+        categoryLabels.shouldHave(new AnyMatch(
+                "Category with name `%s` is presented".formatted(categoryName),
+                category -> category.getText().equals(categoryName)
+        ));
+
+        return this;
+    }
+
+    public ProfilePage categoriesShouldNotHaveLabel(String categoryName) {
+        categoryLabels.shouldHave(new NoneMatch(
+                "Category with name `%s` is not presented".formatted(categoryName),
+                category -> category.getText().equals(categoryName)
+        ));
+
+        return this;
+    }
+
+    public ProfilePage archiveCategory(int index) {
+        new CategoryItem(categoryLabels.get(index))
+                .clickArchiveCategoryBtn()
+                .clickArchiveBtn();
+        return this;
     }
 
 }
