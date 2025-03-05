@@ -29,7 +29,7 @@ public interface SpendApi {
     Call<SpendJson> editSpend(@Body SpendJson spend);
 
     @DELETE("internal/spends/remove")
-    void removeSpend(
+    Call<Void> removeSpend(
             @Query("username") String username,
             @Query("ids") List<String> ids
     );
