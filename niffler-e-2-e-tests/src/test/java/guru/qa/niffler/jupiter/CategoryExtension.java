@@ -2,6 +2,7 @@ package guru.qa.niffler.jupiter;
 
 import guru.qa.niffler.api.SpendApiClient;
 import guru.qa.niffler.model.CategoryJson;
+import guru.qa.niffler.utils.Utils;
 import org.junit.jupiter.api.extension.*;
 import org.junit.platform.commons.support.AnnotationSupport;
 
@@ -19,10 +20,10 @@ public class CategoryExtension implements BeforeEachCallback, AfterTestExecution
                     CategoryJson created = spendApiClient.createCategory(new CategoryJson(
                             UUID.randomUUID(),
                             anno.name().isEmpty()
-                                    ? UUID.randomUUID().toString().split("-")[0]
+                                    ? Utils.randomString()
                                     : anno.name(),
                             anno.username(),
-                            anno.archived()
+                            false
                     ));
 
                     if (anno.archived()) {

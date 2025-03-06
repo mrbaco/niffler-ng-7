@@ -15,8 +15,7 @@ public class ProfileTest {
     private static final Config CFG = Config.getInstance();
 
     @Category(
-            username = "mrbaco",
-            archived = true
+            username = "mrbaco"
     )
     @Test
     void archivedCategoryShouldPresentInCategoriesList(CategoryJson category) {

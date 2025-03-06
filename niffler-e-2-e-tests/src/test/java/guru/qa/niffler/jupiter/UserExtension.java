@@ -1,6 +1,7 @@
 package guru.qa.niffler.jupiter;
 
 import guru.qa.niffler.model.UserJson;
+import guru.qa.niffler.utils.Utils;
 import org.junit.jupiter.api.extension.*;
 import org.junit.platform.commons.support.AnnotationSupport;
 
@@ -18,7 +19,7 @@ public class UserExtension implements BeforeEachCallback, ParameterResolver {
                             context.getUniqueId(),
                             new UserJson(
                                     anno.username().isEmpty()
-                                            ? UUID.randomUUID().toString().split("-")[0]
+                                            ? Utils.randomString()
                                             : anno.username(),
                                     anno.password()
                             )
