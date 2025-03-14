@@ -1,6 +1,7 @@
-package guru.qa.niffler.jupiter;
+package guru.qa.niffler.jupiter.extension;
 
 import guru.qa.niffler.api.SpendApiClient;
+import guru.qa.niffler.jupiter.annotation.Category;
 import guru.qa.niffler.model.CategoryJson;
 import guru.qa.niffler.utils.Utils;
 import org.junit.jupiter.api.extension.*;
@@ -14,7 +15,7 @@ public class CategoryExtension implements BeforeEachCallback, AfterTestExecution
     private final SpendApiClient spendApiClient = new SpendApiClient();
 
     @Override
-    public void beforeEach(ExtensionContext context) throws Exception {
+    public void beforeEach(ExtensionContext context) {
         AnnotationSupport.findAnnotation(context.getRequiredTestMethod(), Category.class)
                 .ifPresent(anno -> {
                     CategoryJson created = spendApiClient.createCategory(new CategoryJson(
@@ -53,7 +54,7 @@ public class CategoryExtension implements BeforeEachCallback, AfterTestExecution
     }
 
     @Override
-    public void afterTestExecution(ExtensionContext context) throws Exception {
+    public void afterTestExecution(ExtensionContext context) {
         CategoryJson category = context.getStore(NAMESPACE).get(context.getUniqueId(), CategoryJson.class);
         if (!category.archived()) {
             spendApiClient.editCategory(new CategoryJson(
