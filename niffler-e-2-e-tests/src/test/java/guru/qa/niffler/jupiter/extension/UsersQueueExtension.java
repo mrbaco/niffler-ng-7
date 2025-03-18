@@ -66,7 +66,8 @@ public class UsersQueueExtension implements
     @SuppressWarnings("unchecked")
     public void beforeEach(ExtensionContext context) {
         Arrays.stream(context.getRequiredTestMethod().getParameters())
-                .filter(params -> AnnotationSupport.isAnnotated(params, UserType.class))
+                .filter(param -> AnnotationSupport.isAnnotated(param, UserType.class) &&
+                        param.getType().isAssignableFrom(StaticUser.class))
                 .forEach(params -> {
                     UserType annotation = params.getAnnotation(UserType.class);
 
@@ -102,12 +103,14 @@ public class UsersQueueExtension implements
     @SuppressWarnings("unchecked")
     public void afterEach(ExtensionContext context) {
         Map<UserType, StaticUser> map = context.getStore(NAMESPACE).get(context.getUniqueId(), Map.class);
-        for (Map.Entry<UserType, StaticUser> e : map.entrySet()) {
-            switch (e.getKey().value()) {
-                case EMPTY -> EMPTY_USERS.add(e.getValue());
-                case WITH_FRIEND -> WITH_FRIEND_USERS.add(e.getValue());
-                case WITH_INCOME_REQUEST -> WITH_INCOME_REQUEST_USERS.add(e.getValue());
-                case WITH_OUTCOME_REQUEST -> WITH_OUTCOME_REQUEST_USERS.add(e.getValue());
+        if (map != null) {
+            for (Map.Entry<UserType, StaticUser> e : map.entrySet()) {
+                switch (e.getKey().value()) {
+                    case EMPTY -> EMPTY_USERS.add(e.getValue());
+                    case WITH_FRIEND -> WITH_FRIEND_USERS.add(e.getValue());
+                    case WITH_INCOME_REQUEST -> WITH_INCOME_REQUEST_USERS.add(e.getValue());
+                    case WITH_OUTCOME_REQUEST -> WITH_OUTCOME_REQUEST_USERS.add(e.getValue());
+                }
             }
         }
     }
