@@ -3,7 +3,7 @@ package guru.qa.niffler.config;
 public interface Config {
 
   static Config getInstance() {
-    return ProdConfig.INSTANCE;
+    return LocalConfig.INSTANCE;
   }
 
   String frontUrl();
