@@ -16,7 +16,7 @@ public class SpendingWebTest {
     private static final Config CFG = Config.getInstance();
 
     @User(
-            username = "duck",
+            username = "mrbaco",
             spendings = @Spending(
                     category = "Обучение",
                     description = "Обучение Advanced 2.0",
@@ -28,7 +28,7 @@ public class SpendingWebTest {
         final String newDescription = "Обучение Niffler Next Generation";
 
         Selenide.open(CFG.frontUrl(), LoginPage.class)
-                .login("duck", "12345")
+                .login("mrbaco", "test")
                 .editSpending(spend.description())
                 .setNewSpendingDescription(newDescription)
                 .save();

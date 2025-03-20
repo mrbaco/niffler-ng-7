@@ -19,17 +19,16 @@ public class RegisterTest {
     @Test
     void shouldRegisterNewUser() {
         String username = RandomDataUtils.randomUsername();
-        String password = RandomDataUtils.randomSentence(1);
 
         Selenide.open(CFG.frontUrl(), LoginPage.class)
                 .clickRegisterBtn()
                 .setUsername(username)
-                .setPassword(password)
-                .setSubmitPassword(password)
+                .setPassword("qwerty")
+                .setSubmitPassword("qwerty")
                 .submitRegistration()
                 .checkThatRegistrationIsSuccess()
                 .clickSignInBtn()
-                .login(username, password)
+                .login(username, "qwerty")
                 .checkThatMainPageIsVisible();
     }
 
