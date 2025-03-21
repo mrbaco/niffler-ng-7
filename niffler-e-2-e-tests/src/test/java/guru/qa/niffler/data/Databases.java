@@ -57,14 +57,21 @@ public class Databases {
     }
 
     @SafeVarargs
-    public static <T> T xaTransaction(XaFunction<T>... actions) {
+    public static <T> T xaTransaction(int isolationLevel, XaFunction<T>... actions) {
         UserTransaction ut = new UserTransactionImp();
         try {
             ut.begin();
 
             T result = null;
             for (XaFunction<T> action : actions) {
-                result = action.function.apply(connection(action.jdbcUrl));
+                Connection connection = connection(action.jdbcUrl);
+
+                int oldIsolationLevel = connection.getTransactionIsolation();
+                connection.setTransactionIsolation(isolationLevel);
+
+                result = action.function.apply(connection);
+
+                connection.setTransactionIsolation(oldIsolationLevel);
             }
 
             ut.commit();
@@ -100,13 +107,20 @@ public class Databases {
         }
     }
 
-    public static void xaTransaction(XaConsumer... actions) {
+    public static void xaTransaction(int isolationLevel, XaConsumer... actions) {
         UserTransaction ut = new UserTransactionImp();
         try {
             ut.begin();
 
             for (XaConsumer action : actions) {
-                action.consumer.accept(connection(action.jdbcUrl));
+                Connection connection = connection(action.jdbcUrl);
+
+                int oldIsolationLevel = connection.getTransactionIsolation();
+                connection.setTransactionIsolation(isolationLevel);
+
+                action.consumer.accept(connection);
+
+                connection.setTransactionIsolation(oldIsolationLevel);
             }
 
             ut.commit();
