@@ -1,7 +1,5 @@
 package guru.qa.niffler.data.dao.impl;
 
-import guru.qa.niffler.config.Config;
-import guru.qa.niffler.data.Databases;
 import guru.qa.niffler.data.dao.UserdataUserDAO;
 import guru.qa.niffler.data.entity.user.UserEntity;
 import guru.qa.niffler.model.CurrencyValues;
@@ -16,37 +14,39 @@ import java.util.UUID;
 
 public class UserdataUserDAOJdbc implements UserdataUserDAO {
 
-    private static final Config CFG = Config.getInstance();
+    private final Connection connection;
+
+    public UserdataUserDAOJdbc(Connection connection) {
+        this.connection = connection;
+    }
 
     @Override
     public UserEntity create(UserEntity user) {
-        try (Connection connection = Databases.connection(CFG.userdataJdbcUrl())) {
-            try (PreparedStatement ps = connection.prepareStatement(
-                    "INSERT INTO user (username, currency, firstname, surname, photo)" +
-                            "VALUES (?, ?, ?, ?, ?, ?)",
-                    Statement.RETURN_GENERATED_KEYS
-            )) {
-                ps.setObject(1, user.getUsername());
-                ps.setString(2, user.getCurrency().name());
-                ps.setString(3, user.getFirstname());
-                ps.setString(4, user.getSurname());
-                ps.setBytes(5, user.getPhoto());
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO user (username, currency, firstname, surname, photo)" +
+                        "VALUES (?, ?, ?, ?, ?, ?)",
+                Statement.RETURN_GENERATED_KEYS
+        )) {
+            ps.setObject(1, user.getUsername());
+            ps.setString(2, user.getCurrency().name());
+            ps.setString(3, user.getFirstname());
+            ps.setString(4, user.getSurname());
+            ps.setBytes(5, user.getPhoto());
 
-                ps.executeUpdate();
+            ps.executeUpdate();
 
-                final UUID generatedKey;
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        generatedKey = rs.getObject("id", UUID.class);
-                    } else {
-                        throw new SQLException("Can`t find id in ResultSet");
-                    }
+            final UUID generatedKey;
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    generatedKey = rs.getObject("id", UUID.class);
+                } else {
+                    throw new SQLException("Can`t find id in ResultSet");
                 }
-
-                user.setId(generatedKey);
-
-                return user;
             }
+
+            user.setId(generatedKey);
+
+            return user;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -54,30 +54,28 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
 
     @Override
     public Optional<UserEntity> findById(UUID id) {
-        try (Connection connection = Databases.connection(CFG.userdataJdbcUrl())) {
-            try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT * FROM user WHERE id = ?",
-                    Statement.RETURN_GENERATED_KEYS
-            )) {
-                ps.setObject(1, id);
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT * FROM user WHERE id = ?",
+                Statement.RETURN_GENERATED_KEYS
+        )) {
+            ps.setObject(1, id);
 
-                ps.execute();
+            ps.execute();
 
-                try (ResultSet rs = ps.getResultSet()) {
-                    if (rs.next()) {
-                        UserEntity entity = new UserEntity();
+            try (ResultSet rs = ps.getResultSet()) {
+                if (rs.next()) {
+                    UserEntity entity = new UserEntity();
 
-                        entity.setId(rs.getObject("id", UUID.class));
-                        entity.setUsername(rs.getString("username"));
-                        entity.setCurrency(CurrencyValues.valueOf(rs.getString("currency")));
-                        entity.setFirstname(rs.getString("firstname"));
-                        entity.setSurname(rs.getString("surname"));
-                        entity.setPhoto(rs.getBytes("photo"));
+                    entity.setId(rs.getObject("id", UUID.class));
+                    entity.setUsername(rs.getString("username"));
+                    entity.setCurrency(CurrencyValues.valueOf(rs.getString("currency")));
+                    entity.setFirstname(rs.getString("firstname"));
+                    entity.setSurname(rs.getString("surname"));
+                    entity.setPhoto(rs.getBytes("photo"));
 
-                        return Optional.of(entity);
-                    } else {
-                        return Optional.empty();
-                    }
+                    return Optional.of(entity);
+                } else {
+                    return Optional.empty();
                 }
             }
         } catch (SQLException e) {
@@ -87,30 +85,28 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
 
     @Override
     public Optional<UserEntity> findByUsername(String username) {
-        try (Connection connection = Databases.connection(CFG.userdataJdbcUrl())) {
-            try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT * FROM user WHERE username = ?",
-                    Statement.RETURN_GENERATED_KEYS
-            )) {
-                ps.setString(1, username);
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT * FROM user WHERE username = ?",
+                Statement.RETURN_GENERATED_KEYS
+        )) {
+            ps.setString(1, username);
 
-                ps.execute();
+            ps.execute();
 
-                try (ResultSet rs = ps.getResultSet()) {
-                    if (rs.next()) {
-                        UserEntity entity = new UserEntity();
+            try (ResultSet rs = ps.getResultSet()) {
+                if (rs.next()) {
+                    UserEntity entity = new UserEntity();
 
-                        entity.setId(rs.getObject("id", UUID.class));
-                        entity.setUsername(rs.getString("username"));
-                        entity.setCurrency(CurrencyValues.valueOf(rs.getString("currency")));
-                        entity.setFirstname(rs.getString("firstname"));
-                        entity.setSurname(rs.getString("surname"));
-                        entity.setPhoto(rs.getBytes("photo"));
+                    entity.setId(rs.getObject("id", UUID.class));
+                    entity.setUsername(rs.getString("username"));
+                    entity.setCurrency(CurrencyValues.valueOf(rs.getString("currency")));
+                    entity.setFirstname(rs.getString("firstname"));
+                    entity.setSurname(rs.getString("surname"));
+                    entity.setPhoto(rs.getBytes("photo"));
 
-                        return Optional.of(entity);
-                    } else {
-                        return Optional.empty();
-                    }
+                    return Optional.of(entity);
+                } else {
+                    return Optional.empty();
                 }
             }
         } catch (SQLException e) {
@@ -120,14 +116,12 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
 
     @Override
     public void delete(UserEntity user) {
-        try (Connection connection = Databases.connection(CFG.userdataJdbcUrl())) {
-            try (PreparedStatement ps = connection.prepareStatement(
-                    "DELETE FROM user WHERE id = ?",
-                    Statement.RETURN_GENERATED_KEYS
-            )) {
-                ps.setObject(1, user.getId());
-                ps.executeUpdate();
-            }
+        try (PreparedStatement ps = connection.prepareStatement(
+                "DELETE FROM user WHERE id = ?",
+                Statement.RETURN_GENERATED_KEYS
+        )) {
+            ps.setObject(1, user.getId());
+            ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
