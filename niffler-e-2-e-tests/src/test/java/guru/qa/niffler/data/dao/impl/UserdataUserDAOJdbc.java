@@ -55,8 +55,7 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     @Override
     public Optional<UserEntity> findById(UUID id) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM user WHERE id = ?",
-                Statement.RETURN_GENERATED_KEYS
+                "SELECT * FROM user WHERE id = ?"
         )) {
             ps.setObject(1, id);
 
@@ -86,8 +85,7 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     @Override
     public Optional<UserEntity> findByUsername(String username) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM user WHERE username = ?",
-                Statement.RETURN_GENERATED_KEYS
+                "SELECT * FROM user WHERE username = ?"
         )) {
             ps.setString(1, username);
 
@@ -117,8 +115,7 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     @Override
     public void delete(UserEntity user) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "DELETE FROM user WHERE id = ?",
-                Statement.RETURN_GENERATED_KEYS
+                "DELETE FROM user WHERE id = ?"
         )) {
             ps.setObject(1, user.getId());
             ps.executeUpdate();

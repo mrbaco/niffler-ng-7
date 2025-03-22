@@ -1,5 +1,7 @@
 package guru.qa.niffler.data.dao.impl;
 
+import guru.qa.niffler.config.Config;
+import guru.qa.niffler.data.Databases;
 import guru.qa.niffler.data.dao.CategoryDao;
 import guru.qa.niffler.data.entity.spend.CategoryEntity;
 
@@ -54,8 +56,7 @@ public class CategoryDaoJdbc implements CategoryDao {
     @Override
     public Optional<CategoryEntity> findById(UUID id) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM category WHERE id = ?",
-                Statement.RETURN_GENERATED_KEYS
+                "SELECT * FROM category WHERE id = ?"
         )) {
             ps.setObject(1, id);
 
@@ -83,8 +84,7 @@ public class CategoryDaoJdbc implements CategoryDao {
     @Override
     public Optional<CategoryEntity> findByUsernameAndName(String username, String name) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM category WHERE username = ? AND name = ?",
-                Statement.RETURN_GENERATED_KEYS
+                "SELECT * FROM category WHERE username = ? AND name = ?"
         )) {
             ps.setString(1, username);
             ps.setString(2, name);
@@ -113,8 +113,7 @@ public class CategoryDaoJdbc implements CategoryDao {
     @Override
     public List<CategoryEntity> findAllByUsername(String username) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM category WHERE username = ?",
-                Statement.RETURN_GENERATED_KEYS
+                "SELECT * FROM category WHERE username = ?"
         )) {
             ps.setString(1, username);
 
@@ -144,8 +143,7 @@ public class CategoryDaoJdbc implements CategoryDao {
     @Override
     public void delete(CategoryEntity category) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "DELETE FROM category WHERE id = ?",
-                Statement.RETURN_GENERATED_KEYS
+                "DELETE FROM category WHERE id = ?"
         )) {
             ps.setObject(1, category.getId());
             ps.executeUpdate();

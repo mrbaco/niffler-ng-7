@@ -10,7 +10,7 @@ enum LocalConfig implements Config {
 
   @Override
   public String authUrl() {
-    return null;
+    return "http://127.0.0.1:9000/";
   }
 
   @Override
@@ -20,12 +20,12 @@ enum LocalConfig implements Config {
 
   @Override
   public String gatewayUrl() {
-    return null;
+    return "http://127.0.0.1:8090/";
   }
 
   @Override
   public String userdataUrl() {
-    return null;
+    return "http://127.0.0.1:8089/";
   }
 
   @Override
