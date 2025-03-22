@@ -55,8 +55,7 @@ public class CategoryDaoJdbc implements CategoryDao {
     public Optional<CategoryEntity> findById(UUID id) {
         try (Connection connection = Databases.connection(CFG.spendJdbcUrl())) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT * FROM category WHERE id = ?",
-                    Statement.RETURN_GENERATED_KEYS
+                    "SELECT * FROM category WHERE id = ?"
             )) {
                 ps.setObject(1, id);
 
@@ -86,8 +85,7 @@ public class CategoryDaoJdbc implements CategoryDao {
     public Optional<CategoryEntity> findByUsernameAndName(String username, String name) {
         try (Connection connection = Databases.connection(CFG.spendJdbcUrl())) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT * FROM category WHERE username = ? AND name = ?",
-                    Statement.RETURN_GENERATED_KEYS
+                    "SELECT * FROM category WHERE username = ? AND name = ?"
             )) {
                 ps.setString(1, username);
                 ps.setString(2, name);
@@ -118,8 +116,7 @@ public class CategoryDaoJdbc implements CategoryDao {
     public List<CategoryEntity> findAllByUsername(String username) {
         try (Connection connection = Databases.connection(CFG.spendJdbcUrl())) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT * FROM category WHERE username = ?",
-                    Statement.RETURN_GENERATED_KEYS
+                    "SELECT * FROM category WHERE username = ?"
             )) {
                 ps.setString(1, username);
 
@@ -151,8 +148,7 @@ public class CategoryDaoJdbc implements CategoryDao {
     public void delete(CategoryEntity category) {
         try (Connection connection = Databases.connection(CFG.spendJdbcUrl())) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "DELETE FROM category WHERE id = ?",
-                    Statement.RETURN_GENERATED_KEYS
+                    "DELETE FROM category WHERE id = ?"
             )) {
                 ps.setObject(1, category.getId());
                 ps.executeUpdate();

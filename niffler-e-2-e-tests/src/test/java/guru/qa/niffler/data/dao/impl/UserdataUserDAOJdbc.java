@@ -56,8 +56,7 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     public Optional<UserEntity> findById(UUID id) {
         try (Connection connection = Databases.connection(CFG.userdataJdbcUrl())) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT * FROM user WHERE id = ?",
-                    Statement.RETURN_GENERATED_KEYS
+                    "SELECT * FROM user WHERE id = ?"
             )) {
                 ps.setObject(1, id);
 
@@ -89,8 +88,7 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     public Optional<UserEntity> findByUsername(String username) {
         try (Connection connection = Databases.connection(CFG.userdataJdbcUrl())) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT * FROM user WHERE username = ?",
-                    Statement.RETURN_GENERATED_KEYS
+                    "SELECT * FROM user WHERE username = ?"
             )) {
                 ps.setString(1, username);
 
@@ -122,8 +120,7 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     public void delete(UserEntity user) {
         try (Connection connection = Databases.connection(CFG.userdataJdbcUrl())) {
             try (PreparedStatement ps = connection.prepareStatement(
-                    "DELETE FROM user WHERE id = ?",
-                    Statement.RETURN_GENERATED_KEYS
+                    "DELETE FROM user WHERE id = ?"
             )) {
                 ps.setObject(1, user.getId());
                 ps.executeUpdate();
