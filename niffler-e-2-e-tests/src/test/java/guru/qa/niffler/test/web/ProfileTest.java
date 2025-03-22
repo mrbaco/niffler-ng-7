@@ -14,9 +14,7 @@ public class ProfileTest {
 
     private static final Config CFG = Config.getInstance();
 
-    @Category(
-            username = "mrbaco"
-    )
+    @Category(username = "mrbaco")
     @Test
     void archivedCategoryShouldPresentInCategoriesList(CategoryJson category) {
         Selenide.open(CFG.frontUrl(), LoginPage.class)
@@ -28,9 +26,7 @@ public class ProfileTest {
                 .categoriesShouldHaveLabel(category.name());
     }
 
-    @Category(
-            username = "mrbaco"
-    )
+    @Category(username = "mrbaco")
     @Test
     void activeCategoryShouldPresentInCategoriesList(CategoryJson category) {
         Selenide.open(CFG.frontUrl(), LoginPage.class)

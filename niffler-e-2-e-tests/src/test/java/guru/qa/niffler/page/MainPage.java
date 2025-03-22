@@ -17,10 +17,16 @@ public class MainPage {
     public static class DropdownMenu {
 
         private final SelenideElement profileLink = $("[href='/profile']");
+        private final SelenideElement friendsLink = $("[href='/people/friends']");
 
         public ProfilePage clickProfileLink() {
             profileLink.click();
             return new ProfilePage();
+        }
+
+        public PeoplePage clickFriendsLink() {
+            friendsLink.click();
+            return new PeoplePage();
         }
 
     }

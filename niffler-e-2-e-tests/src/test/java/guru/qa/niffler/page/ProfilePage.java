@@ -16,21 +16,35 @@ public class ProfilePage {
     private final SelenideElement submitBtn = $("[type='submit']");
     private final SelenideElement showArchivedCheckbox = $("[type='checkbox']");
     private final SelenideElement categoryInput = $("#category");
-    private final ElementsCollection categoryLabels = $$(".MuiChip-label");
     private final SelenideElement successAlert = $(".MuiAlert-standardSuccess");
 
     public static class CategoryItem {
 
+        private static final ElementsCollection categoryLabels = $$(".MuiChip-label");
         private final SelenideElement category;
         private final SelenideElement editCategoryBtn;
         private final SelenideElement editCategoryErrorSpan;
         private final SelenideElement archiveCategoryBtn;
 
-        public CategoryItem(SelenideElement category) {
-            this.category = category;
-            this.editCategoryBtn = category.$("[aria-label='Edit category']");
-            this.editCategoryErrorSpan = category.$("span.input__helper-text");
-            this.archiveCategoryBtn = category.$("[aria-label='Archive category']");
+        public CategoryItem(int index) {
+            category = categoryLabels.get(index);
+            editCategoryBtn = category.$("[aria-label='Edit category']");
+            editCategoryErrorSpan = category.$("span.input__helper-text");
+            archiveCategoryBtn = category.$("[aria-label='Archive category']");
+        }
+
+        public static void categoriesShouldHaveLabel(String categoryName) {
+            categoryLabels.shouldHave(new AnyMatch(
+                    "Category with name `%s` is presented".formatted(categoryName),
+                    category -> category.getText().equals(categoryName)
+            ));
+        }
+
+        public static void categoriesShouldNotHaveLabel(String categoryName) {
+            categoryLabels.shouldHave(new NoneMatch(
+                    "Category with name `%s` is not presented".formatted(categoryName),
+                    category -> category.getText().equals(categoryName)
+            ));
         }
 
         public ArchiveCategoryConfirmationPopup clickArchiveCategoryBtn() {
@@ -65,25 +79,17 @@ public class ProfilePage {
     }
 
     public ProfilePage categoriesShouldHaveLabel(String categoryName) {
-        categoryLabels.shouldHave(new AnyMatch(
-                "Category with name `%s` is presented".formatted(categoryName),
-                category -> category.getText().equals(categoryName)
-        ));
-
+        CategoryItem.categoriesShouldHaveLabel(categoryName);
         return this;
     }
 
     public ProfilePage categoriesShouldNotHaveLabel(String categoryName) {
-        categoryLabels.shouldHave(new NoneMatch(
-                "Category with name `%s` is not presented".formatted(categoryName),
-                category -> category.getText().equals(categoryName)
-        ));
-
+        CategoryItem.categoriesShouldNotHaveLabel(categoryName);
         return this;
     }
 
     public ProfilePage archiveCategory(int index) {
-        new CategoryItem(categoryLabels.get(index))
+        new CategoryItem(index)
                 .clickArchiveCategoryBtn()
                 .clickArchiveBtn();
         return this;
