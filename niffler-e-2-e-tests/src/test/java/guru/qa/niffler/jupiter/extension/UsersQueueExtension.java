@@ -1,5 +1,6 @@
 package guru.qa.niffler.jupiter.extension;
 
+import guru.qa.niffler.jupiter.extension.UsersQueueExtension.UserType.Type;
 import io.qameta.allure.Allure;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -75,12 +76,7 @@ public class UsersQueueExtension implements
 
                         StopWatch sw = StopWatch.createStarted();
                         while (user.isEmpty() && sw.getTime(TimeUnit.SECONDS) < 30) {
-                            user = switch (annotation.value()) {
-                                case EMPTY -> Optional.ofNullable(EMPTY_USERS.poll());
-                                case WITH_FRIEND -> Optional.ofNullable(WITH_FRIEND_USERS.poll());
-                                case WITH_INCOME_REQUEST -> Optional.ofNullable(WITH_INCOME_REQUEST_USERS.poll());
-                                case WITH_OUTCOME_REQUEST -> Optional.ofNullable(WITH_OUTCOME_REQUEST_USERS.poll());
-                            };
+                            user = Optional.ofNullable(getQueueByType(annotation.value()).poll());
                         }
 
                         user.ifPresentOrElse(
@@ -103,12 +99,7 @@ public class UsersQueueExtension implements
     public void afterEach(ExtensionContext context) {
         Map<UserType, StaticUser> map = context.getStore(NAMESPACE).get(context.getUniqueId(), Map.class);
         for (Map.Entry<UserType, StaticUser> e : map.entrySet()) {
-            switch (e.getKey().value()) {
-                case EMPTY -> EMPTY_USERS.add(e.getValue());
-                case WITH_FRIEND -> WITH_FRIEND_USERS.add(e.getValue());
-                case WITH_INCOME_REQUEST -> WITH_INCOME_REQUEST_USERS.add(e.getValue());
-                case WITH_OUTCOME_REQUEST -> WITH_OUTCOME_REQUEST_USERS.add(e.getValue());
-            }
+            getQueueByType(e.getKey().value()).add(e.getValue());
         }
     }
 
@@ -124,4 +115,14 @@ public class UsersQueueExtension implements
         Map<UserType, StaticUser> map = extensionContext.getStore(NAMESPACE).get(extensionContext.getUniqueId(), Map.class);
         return map.get(parameterContext.getAnnotatedElement().getAnnotation(UserType.class));
     }
+
+    private Queue<StaticUser> getQueueByType(Type type) {
+        return switch (type) {
+            case EMPTY -> EMPTY_USERS;
+            case WITH_FRIEND -> WITH_FRIEND_USERS;
+            case WITH_INCOME_REQUEST -> WITH_INCOME_REQUEST_USERS;
+            case WITH_OUTCOME_REQUEST -> WITH_OUTCOME_REQUEST_USERS;
+        };
+    }
+
 }
