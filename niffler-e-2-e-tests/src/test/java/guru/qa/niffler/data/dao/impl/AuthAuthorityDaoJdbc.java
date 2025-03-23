@@ -10,7 +10,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class AuthAuthorityDaoJdbc implements AuthAuthorityDao {
@@ -51,40 +52,42 @@ public class AuthAuthorityDaoJdbc implements AuthAuthorityDao {
     }
 
     @Override
-    public Optional<AuthorityEntity> findById(UUID id) {
+    public List<AuthorityEntity> findByUserId(UUID id) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM authority WHERE id = ?"
+                "SELECT * FROM authority WHERE user_id = ?"
         )) {
             ps.setObject(1, id);
 
             ps.execute();
 
+            List<AuthorityEntity> result = new ArrayList<>();
+
             try (ResultSet rs = ps.getResultSet()) {
-                if (rs.next()) {
+                while (rs.next()) {
                     AuthorityEntity entity = new AuthorityEntity();
 
                     entity.setId(rs.getObject("id", UUID.class));
                     entity.setUser(new AuthUserDaoJdbc(connection)
-                            .findById(rs.getObject("username", UUID.class))
+                            .findByUsername(rs.getString("username"))
                             .orElseGet(UserEntity::new));
                     entity.setAuthority(Authority.valueOf(rs.getString("authority")));
 
-                    return Optional.of(entity);
-                } else {
-                    return Optional.empty();
+                    result.add(entity);
                 }
             }
+
+            return result;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void delete(AuthorityEntity authority) {
+    public void deleteByUserId(UUID id) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "DELETE FROM authority WHERE id = ?"
+                "DELETE FROM authority WHERE user_id = ?"
         )) {
-            ps.setObject(1, authority.getId());
+            ps.setObject(1, id);
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);

@@ -57,11 +57,11 @@ public class AuthUserDaoJdbc implements AuthUserDao {
     }
 
     @Override
-    public Optional<UserEntity> findById(UUID id) {
+    public Optional<UserEntity> findByUsername(String username) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM user WHERE id = ?"
+                "SELECT * FROM user WHERE username = ?"
         )) {
-            ps.setObject(1, id);
+            ps.setString(1, username);
 
             ps.execute();
 
