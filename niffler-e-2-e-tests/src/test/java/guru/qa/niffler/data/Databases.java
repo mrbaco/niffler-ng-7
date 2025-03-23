@@ -16,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
+
 public class Databases {
 
     private Databases() {
@@ -30,16 +32,21 @@ public class Databases {
     public record XaConsumer(Consumer<Connection> consumer, String jdbcUrl) {
     }
 
-    public static <T> T transaction(Function<Connection, T> function, String jdbcUrl) {
+    public static <T> T transaction(int isolationLevel, Function<Connection, T> function, String jdbcUrl) {
         Connection connection = null;
         try {
             connection = connection(jdbcUrl);
+
+            int oldIsolationLevel = connection.getTransactionIsolation();
+
+            connection.setTransactionIsolation(isolationLevel);
             connection.setAutoCommit(false);
 
             T result;
             result = function.apply(connection);
 
             connection.commit();
+            connection.setTransactionIsolation(oldIsolationLevel);
             connection.setAutoCommit(true);
 
             return result;
@@ -54,6 +61,42 @@ public class Databases {
             }
             throw new RuntimeException(e);
         }
+    }
+
+    public static void transaction(int isolationLevel, Consumer<Connection> consumer, String jdbcUrl) {
+        Connection connection = null;
+        try {
+            connection = connection(jdbcUrl);
+
+            int oldIsolationLevel = connection.getTransactionIsolation();
+
+            connection.setTransactionIsolation(isolationLevel);
+            connection.setAutoCommit(false);
+
+            consumer.accept(connection);
+
+            connection.commit();
+            connection.setTransactionIsolation(oldIsolationLevel);
+            connection.setAutoCommit(true);
+        } catch (SQLException e) {
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                    connection.setAutoCommit(true);
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T transaction(Function<Connection, T> function, String jdbcUrl) {
+        return transaction(TRANSACTION_READ_COMMITTED, function, jdbcUrl);
+    }
+
+    public static void transaction(Consumer<Connection> consumer, String jdbcUrl) {
+        transaction(TRANSACTION_READ_COMMITTED, consumer, jdbcUrl);
     }
 
     @SafeVarargs
@@ -86,27 +129,6 @@ public class Databases {
         }
     }
 
-    public static void transaction(Consumer<Connection> consumer, String jdbcUrl) {
-        Connection connection = null;
-        try {
-            connection = connection(jdbcUrl);
-            connection.setAutoCommit(false);
-            consumer.accept(connection);
-            connection.commit();
-            connection.setAutoCommit(true);
-        } catch (SQLException e) {
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                    connection.setAutoCommit(true);
-                } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-            throw new RuntimeException(e);
-        }
-    }
-
     public static void xaTransaction(int isolationLevel, XaConsumer... actions) {
         UserTransaction ut = new UserTransactionImp();
         try {
@@ -132,6 +154,15 @@ public class Databases {
             }
             throw new RuntimeException(e);
         }
+    }
+
+    @SafeVarargs
+    public static <T> T xaTransaction(XaFunction<T>... actions) {
+        return xaTransaction(TRANSACTION_READ_COMMITTED, actions);
+    }
+
+    public static void xaTransaction(XaConsumer... actions) {
+        xaTransaction(TRANSACTION_READ_COMMITTED, actions);
     }
 
     private static DataSource dataSource(String jdbcUrl) {
