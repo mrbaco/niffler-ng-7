@@ -37,8 +37,6 @@ public class Databases {
         try {
             connection = connection(jdbcUrl);
 
-            int oldIsolationLevel = connection.getTransactionIsolation();
-
             connection.setTransactionIsolation(isolationLevel);
             connection.setAutoCommit(false);
 
@@ -46,7 +44,6 @@ public class Databases {
             result = function.apply(connection);
 
             connection.commit();
-            connection.setTransactionIsolation(oldIsolationLevel);
             connection.setAutoCommit(true);
 
             return result;
@@ -68,15 +65,12 @@ public class Databases {
         try {
             connection = connection(jdbcUrl);
 
-            int oldIsolationLevel = connection.getTransactionIsolation();
-
             connection.setTransactionIsolation(isolationLevel);
             connection.setAutoCommit(false);
 
             consumer.accept(connection);
 
             connection.commit();
-            connection.setTransactionIsolation(oldIsolationLevel);
             connection.setAutoCommit(true);
         } catch (SQLException e) {
             if (connection != null) {
@@ -106,15 +100,15 @@ public class Databases {
             ut.begin();
 
             T result = null;
+            boolean transactionIsolationSet = false;
             for (XaFunction<T> action : actions) {
                 Connection connection = connection(action.jdbcUrl);
-
-                int oldIsolationLevel = connection.getTransactionIsolation();
-                connection.setTransactionIsolation(isolationLevel);
+                if (!transactionIsolationSet) {
+                    connection.setTransactionIsolation(isolationLevel);
+                    transactionIsolationSet = true;
+                }
 
                 result = action.function.apply(connection);
-
-                connection.setTransactionIsolation(oldIsolationLevel);
             }
 
             ut.commit();
@@ -134,15 +128,15 @@ public class Databases {
         try {
             ut.begin();
 
+            boolean transactionIsolationSet = false;
             for (XaConsumer action : actions) {
                 Connection connection = connection(action.jdbcUrl);
-
-                int oldIsolationLevel = connection.getTransactionIsolation();
-                connection.setTransactionIsolation(isolationLevel);
+                if (!transactionIsolationSet) {
+                    connection.setTransactionIsolation(isolationLevel);
+                    transactionIsolationSet = true;
+                }
 
                 action.consumer.accept(connection);
-
-                connection.setTransactionIsolation(oldIsolationLevel);
             }
 
             ut.commit();
@@ -173,7 +167,7 @@ public class Databases {
                     final String uniqId = StringUtils.substringAfter(jdbcUrl, "5432/");
 
                     dsBean.setUniqueResourceName(uniqId);
-                    dsBean.setXaDataSourceClassName("org.postgresql.xa.PHXADataSource");
+                    dsBean.setXaDataSourceClassName("org.postgresql.xa.PGXADataSource");
 
                     Properties props = new Properties();
                     props.put("URL", jdbcUrl);
@@ -190,7 +184,7 @@ public class Databases {
 
     private static Connection connection(String jdbcUrl) throws SQLException {
         return threadConnections.computeIfAbsent(
-                Thread.currentThread().getId(),
+                Thread.currentThread().threadId(),
                 key -> {
                     try {
                         return new HashMap<>(Map.of(
