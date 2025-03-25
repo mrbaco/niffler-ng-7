@@ -7,8 +7,9 @@ import java.util.UUID;
 
 public interface AuthAuthorityDao {
 
-    AuthorityEntity create(AuthorityEntity authority);
+    AuthorityEntity[] create(AuthorityEntity... authorities);
     List<AuthorityEntity> findByUserId(UUID id);
     void deleteByUserId(UUID id);
+    List<AuthorityEntity> findAll();
 
 }
