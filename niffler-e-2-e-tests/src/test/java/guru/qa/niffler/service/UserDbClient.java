@@ -5,12 +5,10 @@ import guru.qa.niffler.data.Databases.XaConsumer;
 import guru.qa.niffler.data.Databases.XaFunction;
 import guru.qa.niffler.data.dao.impl.AuthAuthorityDaoJdbc;
 import guru.qa.niffler.data.dao.impl.AuthUserDaoJdbc;
+import guru.qa.niffler.data.dao.impl.UserdataUserDAOJdbc;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
-import guru.qa.niffler.data.entity.auth.AuthorityEntity.Authority;
 import guru.qa.niffler.data.entity.auth.UserEntity;
-
-import java.util.ArrayList;
-import java.util.List;
+import guru.qa.niffler.data.entity.userdata.UdUserEntity;
 
 import static guru.qa.niffler.data.Databases.xaTransaction;
 import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
@@ -23,16 +21,21 @@ public class UserDbClient {
         return xaTransaction(
                 TRANSACTION_READ_UNCOMMITTED,
                 new XaFunction<>(connection -> {
-                    UserEntity created = new AuthUserDaoJdbc(connection).create(user);
-                    user.setId(created.getId());
+                    UdUserEntity udUserEntity = new UdUserEntity();
+                    udUserEntity.setUsername(user.getUsername());
+
+                    new UserdataUserDAOJdbc(connection).create(udUserEntity);
 
                     return user;
-                }, CFG.authJdbcUrl()),
+                }, CFG.userdataJdbcUrl()),
                 new XaFunction<>(connection -> {
+                    UserEntity createdUser = new AuthUserDaoJdbc(connection).create(user);
+                    user.setId(createdUser.getId());
+
                     if (user.getAuthorities() != null) {
                         user.getAuthorities().forEach(authority -> {
-                            AuthorityEntity created = new AuthAuthorityDaoJdbc(connection).create(authority);
-                            authority.setId(created.getId());
+                            AuthorityEntity createdAuthorities = new AuthAuthorityDaoJdbc(connection).create(authority);
+                            authority.setId(createdAuthorities.getId());
                         });
                     }
 
@@ -52,8 +55,21 @@ public class UserDbClient {
                     }
 
                     new AuthAuthorityDaoJdbc(connection).deleteByUserId(user.getId());
+                    new AuthUserDaoJdbc(connection).delete(user);
                 }, CFG.authJdbcUrl()),
-                new XaConsumer(connection -> new AuthUserDaoJdbc(connection).delete(user), CFG.authJdbcUrl())
+                new XaConsumer(connection -> {
+                    UserdataUserDAOJdbc userdataUserDAOJdbc = new UserdataUserDAOJdbc(connection);
+
+                    UdUserEntity udUserEntity = new UdUserEntity();
+                    udUserEntity.setUsername(user.getUsername());
+
+                    udUserEntity.setId(userdataUserDAOJdbc
+                            .findByUsername(udUserEntity.getUsername())
+                            .orElseThrow()
+                            .getId());
+
+                    userdataUserDAOJdbc.delete(udUserEntity);
+                }, CFG.userdataJdbcUrl())
         );
     }
 
