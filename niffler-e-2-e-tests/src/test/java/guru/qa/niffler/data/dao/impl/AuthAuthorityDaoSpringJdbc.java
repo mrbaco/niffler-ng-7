@@ -27,7 +27,7 @@ public class AuthAuthorityDaoSpringJdbc implements AuthAuthorityDao {
     }
 
     @Override
-    public AuthorityEntity[] create(AuthorityEntity... authorities) {
+    public List<AuthorityEntity> create(List<AuthorityEntity> authorities) {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         KeyHolder kh = new GeneratedKeyHolder();
 
@@ -40,13 +40,13 @@ public class AuthAuthorityDaoSpringJdbc implements AuthAuthorityDao {
 
                     @Override
                     public void setValues(@NotNull PreparedStatement ps, int i) throws SQLException {
-                        ps.setObject(i, authorities[i].getUserId());
-                        ps.setString(i, authorities[i].getAuthority().name());
+                        ps.setObject(i, authorities.get(i).getUserId());
+                        ps.setString(i, authorities.get(i).getAuthority().name());
                     }
 
                     @Override
                     public int getBatchSize() {
-                        return authorities.length;
+                        return authorities.size();
                     }
 
                 },

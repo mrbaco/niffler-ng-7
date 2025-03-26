@@ -32,8 +32,7 @@ public class UserDbClient {
                     user.setId(createdUser.getId());
 
                     if (user.getAuthorities() != null) {
-                        user.getAuthorities().forEach(authority ->
-                                new AuthAuthorityDaoJdbc(connection).create(authority));
+                        new AuthAuthorityDaoJdbc(connection).create(user.getAuthorities());
                     }
 
                     return user;
