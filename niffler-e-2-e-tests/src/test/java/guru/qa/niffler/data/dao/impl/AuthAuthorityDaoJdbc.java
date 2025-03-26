@@ -23,31 +23,35 @@ public class AuthAuthorityDaoJdbc implements AuthAuthorityDao {
 
     @Override
     public AuthorityEntity[] create(AuthorityEntity... authorities) {
-        try (PreparedStatement ps = connection.prepareStatement(
-                "INSERT INTO authority (user_id, authority)" +
-                        "VALUES (?, ?)",
-                Statement.RETURN_GENERATED_KEYS
-        )) {
-            ps.setObject(1, authorities[0].getUserId());
-            ps.setString(2, authorities[0].getAuthority().name());
+        for (AuthorityEntity authority : authorities) {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO authority (user_id, authority)" +
+                            "VALUES (?, ?)",
+                    Statement.RETURN_GENERATED_KEYS
+            )) {
+                ps.setObject(1, authority.getUserId());
+                ps.setString(2, authority.getAuthority().name());
 
-            ps.executeUpdate();
+                ps.executeUpdate();
 
-            final UUID generatedKey;
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    generatedKey = rs.getObject("id", UUID.class);
-                } else {
-                    throw new SQLException("Can`t find id in ResultSet");
+                final UUID generatedKey;
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        generatedKey = rs.getObject("id", UUID.class);
+                    } else {
+                        throw new SQLException("Can`t find id in ResultSet");
+                    }
                 }
+
+                authority.setId(generatedKey);
+
+                return authorities;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-
-            authorities[0].setId(generatedKey);
-
-            return authorities;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
+
+        return authorities;
     }
 
     @Override
