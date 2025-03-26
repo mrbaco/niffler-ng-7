@@ -1,6 +1,6 @@
 package guru.qa.niffler.data.dao.impl;
 
-import guru.qa.niffler.data.dao.UserdataUserDAO;
+import guru.qa.niffler.data.dao.UdUserDAO;
 import guru.qa.niffler.data.entity.userdata.UdUserEntity;
 import guru.qa.niffler.model.CurrencyValues;
 
@@ -9,22 +9,24 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class UserdataUserDAOJdbc implements UserdataUserDAO {
+public class UdUserDAOJdbc implements UdUserDAO {
 
     private final Connection connection;
 
-    public UserdataUserDAOJdbc(Connection connection) {
+    public UdUserDAOJdbc(Connection connection) {
         this.connection = connection;
     }
 
     @Override
     public UdUserEntity create(UdUserEntity user) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "INSERT INTO user (username, currency, firstname, surname, photo)" +
-                        "VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO \"user\" (username, currency, firstname, surname, photo, photo_small, full_name)" +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS
         )) {
             ps.setObject(1, user.getUsername());
@@ -32,6 +34,8 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
             ps.setString(3, user.getFirstname());
             ps.setString(4, user.getSurname());
             ps.setBytes(5, user.getPhoto());
+            ps.setBytes(6, user.getPhotoSmall());
+            ps.setString(7, user.getFullname());
 
             ps.executeUpdate();
 
@@ -55,7 +59,7 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     @Override
     public Optional<UdUserEntity> findById(UUID id) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM user WHERE id = ?"
+                "SELECT * FROM \"user\" WHERE id = ?"
         )) {
             ps.setObject(1, id);
 
@@ -71,6 +75,8 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
                     entity.setFirstname(rs.getString("firstname"));
                     entity.setSurname(rs.getString("surname"));
                     entity.setPhoto(rs.getBytes("photo"));
+                    entity.setPhotoSmall(rs.getBytes("photo_small"));
+                    entity.setFullname(rs.getString("full_name"));
 
                     return Optional.of(entity);
                 } else {
@@ -85,7 +91,7 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     @Override
     public Optional<UdUserEntity> findByUsername(String username) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "SELECT * FROM user WHERE username = ?"
+                "SELECT * FROM \"user\" WHERE username = ?"
         )) {
             ps.setString(1, username);
 
@@ -101,6 +107,8 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
                     entity.setFirstname(rs.getString("firstname"));
                     entity.setSurname(rs.getString("surname"));
                     entity.setPhoto(rs.getBytes("photo"));
+                    entity.setPhotoSmall(rs.getBytes("photo_small"));
+                    entity.setFullname(rs.getString("full_name"));
 
                     return Optional.of(entity);
                 } else {
@@ -113,12 +121,44 @@ public class UserdataUserDAOJdbc implements UserdataUserDAO {
     }
 
     @Override
-    public void delete(UdUserEntity user) {
+    public void delete(UUID id) {
         try (PreparedStatement ps = connection.prepareStatement(
-                "DELETE FROM user WHERE id = ?"
+                "DELETE FROM \"user\" WHERE id = ?"
         )) {
-            ps.setObject(1, user.getId());
+            ps.setObject(1, id);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<UdUserEntity> findAll() {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT * FROM \"user\""
+        )) {
+            ps.execute();
+
+            List<UdUserEntity> result = new ArrayList<>();
+
+            try (ResultSet rs = ps.getResultSet()) {
+                while (rs.next()) {
+                    UdUserEntity entity = new UdUserEntity();
+
+                    entity.setId(rs.getObject("id", UUID.class));
+                    entity.setUsername(rs.getString("username"));
+                    entity.setCurrency(CurrencyValues.valueOf(rs.getString("currency")));
+                    entity.setFirstname(rs.getString("firstname"));
+                    entity.setSurname(rs.getString("surname"));
+                    entity.setPhoto(rs.getBytes("photo"));
+                    entity.setPhotoSmall(rs.getBytes("photo_small"));
+                    entity.setFullname(rs.getString("full_name"));
+
+                    result.add(entity);
+                }
+            }
+
+            return result;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

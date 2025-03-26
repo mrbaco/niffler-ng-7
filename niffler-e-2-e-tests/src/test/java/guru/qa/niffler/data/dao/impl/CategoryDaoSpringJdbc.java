@@ -1,0 +1,105 @@
+package guru.qa.niffler.data.dao.impl;
+
+import guru.qa.niffler.data.dao.CategoryDao;
+import guru.qa.niffler.data.entity.spend.CategoryEntity;
+import guru.qa.niffler.data.mapper.CategoryEntityRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+
+import javax.sql.DataSource;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+public class CategoryDaoSpringJdbc implements CategoryDao {
+
+    private final DataSource dataSource;
+
+    public CategoryDaoSpringJdbc(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    @Override
+    public CategoryEntity create(CategoryEntity category) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        KeyHolder kh = new GeneratedKeyHolder();
+
+        jdbcTemplate.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                    "INSERT INTO category (username, name, archived)" +
+                            "VALUES (?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS
+            );
+
+            ps.setString(1, category.getUsername());
+            ps.setString(2, category.getName());
+            ps.setBoolean(3, category.isArchived());
+
+            return ps;
+        }, kh);
+
+        final UUID generatedKey = (UUID) Objects.requireNonNull(kh.getKeys()).get("id");
+        category.setId(generatedKey);
+
+        return category;
+    }
+
+    @Override
+    public Optional<CategoryEntity> findById(UUID id) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+        return Optional.ofNullable(
+                jdbcTemplate.queryForObject(
+                        "SELECT * FROM category WHERE id = ?",
+                        CategoryEntityRowMapper.instance,
+                        id
+                )
+        );
+    }
+
+    @Override
+    public Optional<CategoryEntity> findByUsernameAndName(String username, String name) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+        return Optional.ofNullable(
+                jdbcTemplate.queryForObject(
+                        "SELECT * FROM category WHERE username = ? AND name = ?",
+                        CategoryEntityRowMapper.instance,
+                        username,
+                        name
+                )
+        );
+    }
+
+    @Override
+    public List<CategoryEntity> findAllByUsername(String username) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+        return jdbcTemplate.queryForStream(
+                "SELECT * FROM category WHERE username = ?",
+                CategoryEntityRowMapper.instance,
+                username
+        ).collect(Collectors.toList());
+    }
+
+    @Override
+    public void delete(UUID id) {
+        new JdbcTemplate(dataSource).update("DELETE FROM category WHERE id = ?", id);
+    }
+
+    @Override
+    public List<CategoryEntity> findAll() {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+        return jdbcTemplate.queryForStream(
+                "SELECT * FROM category",
+                CategoryEntityRowMapper.instance
+        ).collect(Collectors.toList());
+    }
+
+}

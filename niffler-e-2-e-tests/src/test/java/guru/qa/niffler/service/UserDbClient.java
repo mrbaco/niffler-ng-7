@@ -5,9 +5,8 @@ import guru.qa.niffler.data.Databases.XaConsumer;
 import guru.qa.niffler.data.Databases.XaFunction;
 import guru.qa.niffler.data.dao.impl.AuthAuthorityDaoJdbc;
 import guru.qa.niffler.data.dao.impl.AuthUserDaoJdbc;
-import guru.qa.niffler.data.dao.impl.UserdataUserDAOJdbc;
-import guru.qa.niffler.data.entity.auth.AuthorityEntity;
-import guru.qa.niffler.data.entity.auth.UserEntity;
+import guru.qa.niffler.data.dao.impl.UdUserDAOJdbc;
+import guru.qa.niffler.data.entity.auth.AuthUserEntity;
 import guru.qa.niffler.data.entity.userdata.UdUserEntity;
 
 import static guru.qa.niffler.data.Databases.xaTransaction;
@@ -17,26 +16,23 @@ public class UserDbClient {
 
     private static final Config CFG = Config.getInstance();
 
-    public UserEntity createUser(UserEntity user) {
+    public AuthUserEntity createUser(AuthUserEntity user) {
         return xaTransaction(
                 TRANSACTION_READ_UNCOMMITTED,
                 new XaFunction<>(connection -> {
                     UdUserEntity udUserEntity = new UdUserEntity();
                     udUserEntity.setUsername(user.getUsername());
 
-                    new UserdataUserDAOJdbc(connection).create(udUserEntity);
+                    new UdUserDAOJdbc(connection).create(udUserEntity);
 
                     return user;
                 }, CFG.userdataJdbcUrl()),
                 new XaFunction<>(connection -> {
-                    UserEntity createdUser = new AuthUserDaoJdbc(connection).create(user);
+                    AuthUserEntity createdUser = new AuthUserDaoJdbc(connection).create(user);
                     user.setId(createdUser.getId());
 
                     if (user.getAuthorities() != null) {
-                        user.getAuthorities().forEach(authority -> {
-                            AuthorityEntity createdAuthorities = new AuthAuthorityDaoJdbc(connection).create(authority);
-                            authority.setId(createdAuthorities.getId());
-                        });
+                        new AuthAuthorityDaoJdbc(connection).create(user.getAuthorities());
                     }
 
                     return user;
@@ -44,21 +40,21 @@ public class UserDbClient {
         );
     }
 
-    public void deleteUser(UserEntity user) {
+    public void deleteUser(AuthUserEntity user) {
         xaTransaction(
                 new XaConsumer(connection -> {
                     if (user.getId() == null) {
-                        UserEntity userEntity = new AuthUserDaoJdbc(connection)
+                        AuthUserEntity authUserEntity = new AuthUserDaoJdbc(connection)
                                 .findByUsername(user.getUsername())
                                 .orElseThrow();
-                        user.setId(userEntity.getId());
+                        user.setId(authUserEntity.getId());
                     }
 
                     new AuthAuthorityDaoJdbc(connection).deleteByUserId(user.getId());
-                    new AuthUserDaoJdbc(connection).delete(user);
+                    new AuthUserDaoJdbc(connection).delete(user.getId());
                 }, CFG.authJdbcUrl()),
                 new XaConsumer(connection -> {
-                    UserdataUserDAOJdbc userdataUserDAOJdbc = new UserdataUserDAOJdbc(connection);
+                    UdUserDAOJdbc userdataUserDAOJdbc = new UdUserDAOJdbc(connection);
 
                     UdUserEntity udUserEntity = new UdUserEntity();
                     udUserEntity.setUsername(user.getUsername());
@@ -68,7 +64,7 @@ public class UserDbClient {
                             .orElseThrow()
                             .getId());
 
-                    userdataUserDAOJdbc.delete(udUserEntity);
+                    userdataUserDAOJdbc.delete(udUserEntity.getId());
                 }, CFG.userdataJdbcUrl())
         );
     }

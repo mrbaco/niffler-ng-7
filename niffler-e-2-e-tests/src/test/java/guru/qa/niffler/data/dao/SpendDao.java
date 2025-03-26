@@ -11,6 +11,7 @@ public interface SpendDao {
     SpendEntity create(SpendEntity spend);
     Optional<SpendEntity> findById(UUID id);
     List<SpendEntity> findAllByUsername(String username);
-    void delete(SpendEntity spend);
+    void delete(UUID id);
+    List<SpendEntity> findAll();
 
 }
