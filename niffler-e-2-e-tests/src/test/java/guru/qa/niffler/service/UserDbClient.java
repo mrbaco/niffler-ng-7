@@ -1,72 +1,74 @@
 package guru.qa.niffler.service;
 
 import guru.qa.niffler.config.Config;
-import guru.qa.niffler.data.Databases.XaConsumer;
-import guru.qa.niffler.data.Databases.XaFunction;
+import guru.qa.niffler.data.dao.AuthAuthorityDao;
+import guru.qa.niffler.data.dao.AuthUserDao;
+import guru.qa.niffler.data.dao.UdUserDAO;
 import guru.qa.niffler.data.dao.impl.AuthAuthorityDaoJdbc;
 import guru.qa.niffler.data.dao.impl.AuthUserDaoJdbc;
 import guru.qa.niffler.data.dao.impl.UdUserDAOJdbc;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
-import guru.qa.niffler.data.entity.userdata.UdUserEntity;
+import guru.qa.niffler.data.entity.auth.AuthorityEntity;
+import guru.qa.niffler.data.entity.auth.AuthorityEntity.Authority;
+import guru.qa.niffler.data.tpl.XaTransactionTemplate;
+import guru.qa.niffler.model.UserJson;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static guru.qa.niffler.data.Databases.xaTransaction;
-import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserDbClient {
 
     private static final Config CFG = Config.getInstance();
 
-    public AuthUserEntity createUser(AuthUserEntity user) {
-        return xaTransaction(
-                TRANSACTION_READ_UNCOMMITTED,
-                new XaFunction<>(connection -> {
-                    UdUserEntity udUserEntity = new UdUserEntity();
-                    udUserEntity.setUsername(user.getUsername());
+    private static final PasswordEncoder pe = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
-                    new UdUserDAOJdbc(connection).create(udUserEntity);
+    private final AuthUserDao authUserDao = new AuthUserDaoJdbc();
+    private final AuthAuthorityDao authAuthorityDao = new AuthAuthorityDaoJdbc();
+    private final UdUserDAO udUserDAO = new UdUserDAOJdbc();
 
-                    return user;
-                }, CFG.userdataJdbcUrl()),
-                new XaFunction<>(connection -> {
-                    AuthUserEntity createdUser = new AuthUserDaoJdbc(connection).create(user);
-                    user.setId(createdUser.getId());
+    private final XaTransactionTemplate xaTransactionTemplate = new XaTransactionTemplate(
+            CFG.authJdbcUrl(),
+            CFG.userdataJdbcUrl()
+    );
 
-                    if (user.getAuthorities() != null) {
-                        new AuthAuthorityDaoJdbc(connection).create(user.getAuthorities());
-                    }
+    public UserJson createUser(UserJson user) {
+        return xaTransactionTemplate.execute(() -> {
+            AuthUserEntity authUser = new AuthUserEntity();
 
-                    return user;
-                }, CFG.authJdbcUrl())
-        );
+            authUser.setUsername(user.username());
+            authUser.setPassword(pe.encode("test"));
+            authUser.setEnabled(true);
+            authUser.setAccountNonExpired(true);
+            authUser.setAccountNonLocked(true);
+            authUser.setCredentialsNonExpired(true);
+
+            authUserDao.create(authUser);
+
+            List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
+                AuthorityEntity authorityEntity = new AuthorityEntity();
+
+                authorityEntity.setUserId(null);
+                authorityEntity.setAuthority(e);
+
+                return authorityEntity;
+            }).collect(Collectors.toList());
+
+            authAuthorityDao.create(authorityEntities);
+
+            return udUserDAO.create(user.toUserEntity()).toJson();
+        });
     }
 
-    public void deleteUser(AuthUserEntity user) {
-        xaTransaction(
-                new XaConsumer(connection -> {
-                    if (user.getId() == null) {
-                        AuthUserEntity authUserEntity = new AuthUserDaoJdbc(connection)
-                                .findByUsername(user.getUsername())
-                                .orElseThrow();
-                        user.setId(authUserEntity.getId());
-                    }
-
-                    new AuthAuthorityDaoJdbc(connection).deleteByUserId(user.getId());
-                    new AuthUserDaoJdbc(connection).delete(user.getId());
-                }, CFG.authJdbcUrl()),
-                new XaConsumer(connection -> {
-                    UdUserDAOJdbc userdataUserDAOJdbc = new UdUserDAOJdbc(connection);
-
-                    UdUserEntity udUserEntity = new UdUserEntity();
-                    udUserEntity.setUsername(user.getUsername());
-
-                    udUserEntity.setId(userdataUserDAOJdbc
-                            .findByUsername(udUserEntity.getUsername())
-                            .orElseThrow()
-                            .getId());
-
-                    userdataUserDAOJdbc.delete(udUserEntity.getId());
-                }, CFG.userdataJdbcUrl())
-        );
+    public void deleteUser(UserJson user) {
+        xaTransactionTemplate.execute(() -> {
+            udUserDAO.delete(user.id());
+            authUserDao.delete(user.id());
+            authAuthorityDao.deleteByUserId(user.id());
+            return user;
+        });
     }
 
 }
