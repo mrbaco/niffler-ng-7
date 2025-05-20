@@ -18,8 +18,8 @@ public class UdUserEntity implements Serializable {
     private String firstname;
     private String surname;
     private String fullname;
-    private Byte[] photo;
-    private Byte[] photoSmall;
+    private byte[] photo;
+    private byte[] photoSmall;
 
     public UserJson toJson() {
         return new UserJson(

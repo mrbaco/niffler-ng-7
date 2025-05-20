@@ -20,11 +20,11 @@ public record UserJson(
         @JsonProperty("currency")
         CurrencyValues currency,
         @JsonProperty("photo")
-        Byte[] photo,
+        byte[] photo,
         @JsonProperty("photoSmall")
-        Byte[] photoSmall) {
+        byte[] photoSmall) {
 
-        public UdUserEntity toUserEntity() {
+        public UdUserEntity toUdUserEntity() {
                 UdUserEntity udUserEntity = new UdUserEntity();
 
                 udUserEntity.setId(this.id);

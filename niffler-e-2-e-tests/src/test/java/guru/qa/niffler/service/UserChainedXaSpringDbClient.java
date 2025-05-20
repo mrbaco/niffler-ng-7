@@ -4,38 +4,43 @@ import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.dao.AuthAuthorityDao;
 import guru.qa.niffler.data.dao.AuthUserDao;
 import guru.qa.niffler.data.dao.UdUserDAO;
-import guru.qa.niffler.data.dao.impl.AuthAuthorityDaoJdbc;
-import guru.qa.niffler.data.dao.impl.AuthUserDaoJdbc;
-import guru.qa.niffler.data.dao.impl.UdUserDAOJdbc;
+import guru.qa.niffler.data.dao.impl.AuthAuthorityDaoSpringJdbc;
+import guru.qa.niffler.data.dao.impl.AuthUserDaoSpringJdbc;
+import guru.qa.niffler.data.dao.impl.UdUserDAOSpringJdbc;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity.Authority;
-import guru.qa.niffler.data.tpl.XaTransactionTemplate;
 import guru.qa.niffler.model.UserJson;
+import org.springframework.data.transaction.ChainedTransactionManager;
+import org.springframework.jdbc.support.JdbcTransactionManager;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class UserDbClient {
+import static guru.qa.niffler.data.tpl.DataSources.dataSource;
+
+@Deprecated
+public class UserChainedXaSpringDbClient {
 
     private static final Config CFG = Config.getInstance();
 
     private static final PasswordEncoder pe = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 
-    private final AuthUserDao authUserDao = new AuthUserDaoJdbc();
-    private final AuthAuthorityDao authAuthorityDao = new AuthAuthorityDaoJdbc();
-    private final UdUserDAO udUserDAO = new UdUserDAOJdbc();
+    private final AuthUserDao authUserDao = new AuthUserDaoSpringJdbc();
+    private final AuthAuthorityDao authAuthorityDao = new AuthAuthorityDaoSpringJdbc();
+    private final UdUserDAO udUserDAO = new UdUserDAOSpringJdbc();
 
-    private final XaTransactionTemplate xaTransactionTemplate = new XaTransactionTemplate(
-            CFG.authJdbcUrl(),
-            CFG.userdataJdbcUrl()
-    );
+    private final TransactionTemplate chainedTransaction = new TransactionTemplate(new ChainedTransactionManager(
+            new JdbcTransactionManager(dataSource(CFG.authJdbcUrl())),
+            new JdbcTransactionManager(dataSource(CFG.userdataUrl()))
+    ));
 
     public UserJson createUser(UserJson user) {
-        return xaTransactionTemplate.execute(() -> {
+        return chainedTransaction.execute(connection -> {
             AuthUserEntity authUser = new AuthUserEntity();
 
             authUser.setUsername(user.username());
@@ -59,16 +64,6 @@ public class UserDbClient {
             authAuthorityDao.create(authorityEntities);
 
             return udUserDAO.create(user.toUdUserEntity()).toJson();
-        });
-    }
-
-    public void deleteUser(UserJson user) {
-        xaTransactionTemplate.execute(() -> {
-            udUserDAO.delete(user.id());
-            authUserDao.delete(user.id());
-            authAuthorityDao.deleteByUserId(user.id());
-
-            return user;
         });
     }
 
