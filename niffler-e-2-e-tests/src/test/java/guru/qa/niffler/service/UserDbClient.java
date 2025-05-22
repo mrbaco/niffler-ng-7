@@ -108,7 +108,7 @@ public class UserDbClient {
 
             authAuthorityDaoJdbc.create(authorityEntities);
 
-            return udUserDaoJdbc.create(user.toUserEntity()).toJson();
+            return udUserDaoJdbc.create(user.toUdUserEntity()).toJson();
         });
     }
 
@@ -153,7 +153,7 @@ public class UserDbClient {
 
         authAuthorityDaoJdbc.create(authorityEntities);
 
-        return udUserDaoJdbc.create(user.toUserEntity()).toJson();
+        return udUserDaoJdbc.create(user.toUdUserEntity()).toJson();
     }
 
     public void deleteUserJdbc(UserJson user) {
@@ -195,7 +195,7 @@ public class UserDbClient {
 
             authAuthorityDaoSpringJdbc.create(authorityEntities);
 
-            return udUserDaoSpringJdbc.create(user.toUserEntity()).toJson();
+            return udUserDaoSpringJdbc.create(user.toUdUserEntity()).toJson();
         });
     }
 
@@ -240,7 +240,7 @@ public class UserDbClient {
 
         authAuthorityDaoSpringJdbc.create(authorityEntities);
 
-        return udUserDaoSpringJdbc.create(user.toUserEntity()).toJson();
+        return udUserDaoSpringJdbc.create(user.toUdUserEntity()).toJson();
     }
 
     public void deleteUserSpringJdbc(UserJson user) {
@@ -283,7 +283,7 @@ public class UserDbClient {
 
             authAuthorityDaoSpringJdbc.create(authorityEntities);
 
-            return udUserDaoSpringJdbc.create(user.toUserEntity()).toJson();
+            return udUserDaoSpringJdbc.create(user.toUdUserEntity()).toJson();
         });
     }
 

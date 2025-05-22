@@ -34,7 +34,7 @@ public record UserJson(
                 this(false, id, username, firstname, surname, fullname, currency, photo, photoSmall);
         }
 
-        public UdUserEntity toUserEntity() {
+        public UdUserEntity toUdUserEntity() {
                 UdUserEntity udUserEntity = new UdUserEntity();
 
                 udUserEntity.setId(this.id);
