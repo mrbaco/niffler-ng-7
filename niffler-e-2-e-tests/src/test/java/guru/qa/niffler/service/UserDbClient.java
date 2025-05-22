@@ -13,7 +13,6 @@ import guru.qa.niffler.data.dao.impl.UdUserDAOSpringJdbc;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity.Authority;
-import guru.qa.niffler.data.entity.userdata.UdUserEntity;
 import guru.qa.niffler.data.tpl.XaTransactionTemplate;
 import guru.qa.niffler.model.UserJson;
 import org.springframework.data.transaction.ChainedTransactionManager;
