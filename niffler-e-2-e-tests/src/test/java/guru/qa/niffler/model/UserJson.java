@@ -1,11 +1,16 @@
 package guru.qa.niffler.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import guru.qa.niffler.data.entity.userdata.UdUserEntity;
 
 import java.util.UUID;
 
 public record UserJson(
+
+        @Deprecated
+        @JsonIgnore
+        boolean error,
 
         @JsonProperty("id")
         UUID id,
@@ -24,7 +29,12 @@ public record UserJson(
         @JsonProperty("photoSmall")
         byte[] photoSmall) {
 
-        public UdUserEntity toUdUserEntity() {
+        @Deprecated
+        public UserJson(UUID id, String username, String firstname, String surname, String fullname, CurrencyValues currency, byte[] photo, byte[] photoSmall) {
+                this(false, id, username, firstname, surname, fullname, currency, photo, photoSmall);
+        }
+
+        public UdUserEntity toUserEntity() {
                 UdUserEntity udUserEntity = new UdUserEntity();
 
                 udUserEntity.setId(this.id);
