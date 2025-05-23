@@ -8,19 +8,22 @@ import guru.qa.niffler.data.dao.impl.AuthAuthorityDaoJdbc;
 import guru.qa.niffler.data.dao.impl.AuthAuthorityDaoSpringJdbc;
 import guru.qa.niffler.data.dao.impl.AuthUserDaoJdbc;
 import guru.qa.niffler.data.dao.impl.AuthUserDaoSpringJdbc;
-import guru.qa.niffler.data.dao.impl.UdUserDAOJdbc;
-import guru.qa.niffler.data.dao.impl.UdUserDAOSpringJdbc;
+import guru.qa.niffler.data.dao.impl.UdUserDaoJdbc;
+import guru.qa.niffler.data.dao.impl.UdUserDaoSpringJdbc;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity.Authority;
+import guru.qa.niffler.data.tpl.JdbcTransactionTemplate;
 import guru.qa.niffler.data.tpl.XaTransactionTemplate;
 import guru.qa.niffler.model.UserJson;
 import org.springframework.data.transaction.ChainedTransactionManager;
 import org.springframework.jdbc.support.JdbcTransactionManager;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,11 +39,15 @@ public class UserDbClient {
 
     private final AuthUserDao authUserDaoJdbc = new AuthUserDaoJdbc();
     private final AuthAuthorityDao authAuthorityDaoJdbc = new AuthAuthorityDaoJdbc();
-    private final UdUserDAO udUserDaoJdbc = new UdUserDAOJdbc();
+    private final UdUserDAO udUserDaoJdbc = new UdUserDaoJdbc();
 
     private final AuthUserDao authUserDaoSpringJdbc = new AuthUserDaoSpringJdbc();
     private final AuthAuthorityDao authAuthorityDaoSpringJdbc = new AuthAuthorityDaoSpringJdbc();
-    private final UdUserDAO udUserDaoSpringJdbc = new UdUserDAOSpringJdbc();
+    private final UdUserDAO udUserDaoSpringJdbc = new UdUserDaoSpringJdbc();
+
+    private final JdbcTransactionTemplate jdbcTxTemplate = new JdbcTransactionTemplate(
+            CFG.spendJdbcUrl()
+    );
 
     private final XaTransactionTemplate xaTxTemplate = new XaTransactionTemplate(
             CFG.authJdbcUrl(),
@@ -73,7 +80,7 @@ public class UserDbClient {
     }
 
     public void deleteUdUser(String username) {
-        udUserDaoJdbc.findByUsername(username).ifPresent(user -> udUserDaoJdbc.delete(user.getId()));
+        udUserDaoJdbc.findByUsername(username).ifPresent(user -> udUserDaoJdbc.deleteByUsername(username));
     }
 
     public boolean existUser(String username) {
@@ -81,7 +88,7 @@ public class UserDbClient {
     }
 
     public UserJson createUserJdbcTx(UserJson user) {
-        return xaTxTemplate.execute(() -> {
+        return jdbcTxTemplate.execute(() -> {
             AuthUserEntity authUser = new AuthUserEntity();
 
             authUser.setUsername(user.username());
@@ -96,7 +103,7 @@ public class UserDbClient {
             List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
                 AuthorityEntity authorityEntity = new AuthorityEntity();
 
-                authorityEntity.setUserId(null);
+                authorityEntity.setUserId(authUser.getId());
                 authorityEntity.setAuthority(e);
 
                 return authorityEntity;
@@ -113,15 +120,20 @@ public class UserDbClient {
     }
 
     public void deleteUserJdbcTx(UserJson user) {
-        xaTxTemplate.execute(() -> {
-            udUserDaoJdbc.delete(user.id());
-            authUserDaoJdbc.delete(user.id());
+        jdbcTxTemplate.execute(() -> {
+            AuthUserEntity userEntity = authUserDaoJdbc.findByUsername(user.username()).orElse(null);
 
-            if (user.error()) {
-                throw new RuntimeException("parameter `error` for user");
+            if (userEntity != null) {
+                authAuthorityDaoJdbc.deleteByUserId(userEntity.getId());
+                udUserDaoJdbc.deleteByUsername(user.username());
+
+                if (user.error()) {
+                    throw new RuntimeException("parameter `error` for user");
+                }
+
+                authUserDaoJdbc.delete(userEntity.getId());
             }
 
-            authAuthorityDaoJdbc.deleteByUserId(user.id());
             return user;
         });
     }
@@ -141,7 +153,7 @@ public class UserDbClient {
         List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
             AuthorityEntity authorityEntity = new AuthorityEntity();
 
-            authorityEntity.setUserId(null);
+            authorityEntity.setUserId(authUser.getId());
             authorityEntity.setAuthority(e);
 
             return authorityEntity;
@@ -157,14 +169,13 @@ public class UserDbClient {
     }
 
     public void deleteUserJdbc(UserJson user) {
-        udUserDaoJdbc.delete(user.id());
-        authUserDaoJdbc.delete(user.id());
+        AuthUserEntity userEntity = authUserDaoJdbc.findByUsername(user.username()).orElse(null);
 
-        if (user.error()) {
-            throw new RuntimeException("parameter `error` for user");
+        if (userEntity != null) {
+            authAuthorityDaoJdbc.deleteByUserId(userEntity.getId());
+            udUserDaoJdbc.deleteByUsername(user.username());
+            authUserDaoJdbc.delete(userEntity.getId());
         }
-
-        authAuthorityDaoJdbc.deleteByUserId(user.id());
     }
 
     public UserJson createUserSpringJdbcTx(UserJson user) {
@@ -183,7 +194,7 @@ public class UserDbClient {
             List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
                 AuthorityEntity authorityEntity = new AuthorityEntity();
 
-                authorityEntity.setUserId(null);
+                authorityEntity.setUserId(authUser.getId());
                 authorityEntity.setAuthority(e);
 
                 return authorityEntity;
@@ -201,14 +212,19 @@ public class UserDbClient {
 
     public void deleteUserSpringJdbcTx(UserJson user) {
         xaTxTemplate.execute(() -> {
-            udUserDaoSpringJdbc.delete(user.id());
-            authUserDaoSpringJdbc.delete(user.id());
+            AuthUserEntity userEntity = authUserDaoSpringJdbc.findByUsername(user.username()).orElse(null);
 
-            if (user.error()) {
-                throw new RuntimeException("parameter `error` for user");
+            if (userEntity != null) {
+                authAuthorityDaoSpringJdbc.deleteByUserId(userEntity.getId());
+                udUserDaoSpringJdbc.deleteByUsername(user.username());
+
+                if (user.error()) {
+                    throw new RuntimeException("parameter `error` for user");
+                }
+
+                authUserDaoSpringJdbc.delete(userEntity.getId());
             }
 
-            authAuthorityDaoSpringJdbc.deleteByUserId(user.id());
             return user;
         });
     }
@@ -228,7 +244,7 @@ public class UserDbClient {
         List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
             AuthorityEntity authorityEntity = new AuthorityEntity();
 
-            authorityEntity.setUserId(null);
+            authorityEntity.setUserId(authUser.getId());
             authorityEntity.setAuthority(e);
 
             return authorityEntity;
@@ -244,14 +260,13 @@ public class UserDbClient {
     }
 
     public void deleteUserSpringJdbc(UserJson user) {
-        udUserDaoSpringJdbc.delete(user.id());
-        authUserDaoSpringJdbc.delete(user.id());
+        AuthUserEntity userEntity = authUserDaoSpringJdbc.findByUsername(user.username()).orElse(null);
 
-        if (user.error()) {
-            throw new RuntimeException("parameter `error` for user");
+        if (userEntity != null) {
+            authAuthorityDaoSpringJdbc.deleteByUserId(userEntity.getId());
+            udUserDaoSpringJdbc.deleteByUsername(user.username());
+            authUserDaoSpringJdbc.delete(userEntity.getId());
         }
-
-        authAuthorityDaoSpringJdbc.deleteByUserId(user.id());
     }
 
     @Deprecated
@@ -271,17 +286,17 @@ public class UserDbClient {
             List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
                 AuthorityEntity authorityEntity = new AuthorityEntity();
 
-                authorityEntity.setUserId(null);
+                authorityEntity.setUserId(authUser.getId());
                 authorityEntity.setAuthority(e);
 
                 return authorityEntity;
             }).collect(Collectors.toList());
 
+            authAuthorityDaoSpringJdbc.create(authorityEntities);
+
             if (user.error()) {
                 throw new RuntimeException("parameter `error` for user");
             }
-
-            authAuthorityDaoSpringJdbc.create(authorityEntities);
 
             return udUserDaoSpringJdbc.create(user.toUdUserEntity()).toJson();
         });
@@ -290,14 +305,14 @@ public class UserDbClient {
     @Deprecated
     public void deleteUserSpringJdbcChainedTx(UserJson user) {
         chainedTxTemplate.execute(connection -> {
-            udUserDaoSpringJdbc.delete(user.id());
-            authUserDaoSpringJdbc.delete(user.id());
+            AuthUserEntity userEntity = authUserDaoSpringJdbc.findByUsername(user.username()).orElse(null);
 
-            if (user.error()) {
-                throw new RuntimeException("parameter `error` for user");
+            if (userEntity != null) {
+                authAuthorityDaoSpringJdbc.deleteByUserId(userEntity.getId());
+                udUserDaoSpringJdbc.deleteByUsername(user.username());
+                authUserDaoSpringJdbc.delete(userEntity.getId());
             }
 
-            authAuthorityDaoSpringJdbc.deleteByUserId(user.id());
             return user;
         });
     }

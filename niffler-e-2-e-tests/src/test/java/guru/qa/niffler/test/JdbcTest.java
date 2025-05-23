@@ -49,7 +49,7 @@ public class JdbcTest {
     @Test
     @Description("Проверить успешный откат транзакции при ошибке создания пользователя JDBC транзакция")
     void createJdbcTxFailWithRollback() {
-        userDbClient.createUserJdbc(userWithError);
+        Assertions.assertThrows(RuntimeException.class, () -> userDbClient.createUserJdbc(userWithError));
         Assertions.assertFalse(userDbClient.existUdUser(validUser.username()));
         Assertions.assertFalse(userDbClient.existAuthUser(validUser.username()));
         Assertions.assertFalse(userDbClient.existAuthAuthorityEntities(validUser.username()));
@@ -70,7 +70,7 @@ public class JdbcTest {
     @Test
     @Description("Проверить успешный откат транзакции при ошибке создания пользователя Spring JDBC транзакция")
     void createSpringJdbcTxFailWithRollback() {
-        userDbClient.createUserSpringJdbcTx(userWithError);
+        Assertions.assertThrows(RuntimeException.class, () -> userDbClient.createUserSpringJdbcTx(userWithError));
         Assertions.assertFalse(userDbClient.existUdUser(validUser.username()));
         Assertions.assertFalse(userDbClient.existAuthUser(validUser.username()));
         Assertions.assertFalse(userDbClient.existAuthAuthorityEntities(validUser.username()));
@@ -91,11 +91,12 @@ public class JdbcTest {
     @Test
     @Description("Проверить невозможность отката изменений в базу данных при ошибке создания пользователя JDBC")
     void createJdbcFailWithNoRollback() {
-        userDbClient.createUserJdbc(userWithError);
+        Assertions.assertThrows(RuntimeException.class, () -> userDbClient.createUserJdbc(userWithError));
+        Assertions.assertTrue(userDbClient.existAuthUser(userWithError.username()));
+        Assertions.assertFalse(userDbClient.existUdUser(userWithError.username()));
+        Assertions.assertFalse(userDbClient.existAuthAuthorityEntities(userWithError.username()));
+        userDbClient.deleteUserJdbc(userWithError);
         Assertions.assertFalse(userDbClient.existAuthUser(userWithError.username()));
-        Assertions.assertTrue(userDbClient.existUdUser(userWithError.username()));
-        Assertions.assertTrue(userDbClient.existAuthAuthorityEntities(userWithError.username()));
-        userDbClient.deleteUdUser(userWithError.username());
     }
 
     @Test
@@ -113,11 +114,12 @@ public class JdbcTest {
     @Test
     @Description("Проверить невозможность отката изменений в базу данных при ошибке создания пользователя Spring JDBC")
     void createSpringJdbcFailWithNoRollback() {
-        userDbClient.createUserSpringJdbc(userWithError);
+        Assertions.assertThrows(RuntimeException.class, () -> userDbClient.createUserSpringJdbc(userWithError));
+        Assertions.assertTrue(userDbClient.existAuthUser(userWithError.username()));
+        Assertions.assertFalse(userDbClient.existUdUser(userWithError.username()));
+        Assertions.assertFalse(userDbClient.existAuthAuthorityEntities(userWithError.username()));
+        userDbClient.deleteUserSpringJdbc(userWithError);
         Assertions.assertFalse(userDbClient.existAuthUser(userWithError.username()));
-        Assertions.assertTrue(userDbClient.existUdUser(userWithError.username()));
-        Assertions.assertTrue(userDbClient.existAuthAuthorityEntities(userWithError.username()));
-        userDbClient.deleteUdUser(userWithError.username());
     }
 
     @Deprecated
@@ -137,11 +139,12 @@ public class JdbcTest {
     @Test
     @Description("Проверить невозможность отката изменений в базу данных при ошибке создания пользователя Spring JDBC Chained транзакция")
     void createSpringJdbcChainedTxFailWithNoRollback() {
-        userDbClient.createUserSpringJdbcChainedTx(userWithError);
+        Assertions.assertThrows(RuntimeException.class, () -> userDbClient.createUserSpringJdbcChainedTx(userWithError));
+        Assertions.assertTrue(userDbClient.existAuthUser(userWithError.username()));
+        Assertions.assertFalse(userDbClient.existUdUser(userWithError.username()));
+        Assertions.assertFalse(userDbClient.existAuthAuthorityEntities(userWithError.username()));
+        userDbClient.deleteUserSpringJdbcChainedTx(userWithError);
         Assertions.assertFalse(userDbClient.existAuthUser(userWithError.username()));
-        Assertions.assertTrue(userDbClient.existUdUser(userWithError.username()));
-        Assertions.assertTrue(userDbClient.existAuthAuthorityEntities(userWithError.username()));
-        userDbClient.deleteUdUser(userWithError.username());
     }
 
 }

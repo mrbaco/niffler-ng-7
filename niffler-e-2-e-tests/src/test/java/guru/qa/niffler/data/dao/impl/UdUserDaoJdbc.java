@@ -16,7 +16,7 @@ import java.util.UUID;
 
 import static guru.qa.niffler.data.tpl.Connections.holder;
 
-public class UdUserDAOJdbc implements UdUserDAO {
+public class UdUserDaoJdbc implements UdUserDAO {
 
     private static final Config CFG = Config.getInstance();
 
@@ -119,11 +119,11 @@ public class UdUserDAOJdbc implements UdUserDAO {
     }
 
     @Override
-    public void delete(UUID id) {
+    public void deleteByUsername(String username) {
         try (PreparedStatement ps = holder(CFG.userdataJdbcUrl()).connection().prepareStatement(
-                "DELETE FROM \"user\" WHERE id = ?"
+                "DELETE FROM \"user\" WHERE username = ?"
         )) {
-            ps.setObject(1, id);
+            ps.setObject(1, username);
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);

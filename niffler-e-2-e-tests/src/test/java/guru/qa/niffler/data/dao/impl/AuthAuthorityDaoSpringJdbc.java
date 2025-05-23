@@ -37,8 +37,8 @@ public class AuthAuthorityDaoSpringJdbc implements AuthAuthorityDao {
 
                     @Override
                     public void setValues(@NotNull PreparedStatement ps, int i) throws SQLException {
-                        ps.setObject(i, authorities.get(i).getUserId());
-                        ps.setString(i, authorities.get(i).getAuthority().name());
+                        ps.setObject(1, authorities.get(i).getUserId());
+                        ps.setString(2, authorities.get(i).getAuthority().name());
                     }
 
                     @Override
@@ -64,7 +64,7 @@ public class AuthAuthorityDaoSpringJdbc implements AuthAuthorityDao {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.authJdbcUrl()));
 
         return jdbcTemplate.queryForStream(
-                "SELECT * FROM \"user\" WHERE id = ?",
+                "SELECT * FROM authority WHERE user_id = ?",
                 AuthorityEntityRowMapper.instance,
                 id
         ).collect(Collectors.toList());
@@ -72,7 +72,7 @@ public class AuthAuthorityDaoSpringJdbc implements AuthAuthorityDao {
 
     @Override
     public void deleteByUserId(UUID id) {
-        new JdbcTemplate(DataSources.dataSource(CFG.authJdbcUrl())).update("DELETE FROM \"user\" WHERE id = ?", id);
+        new JdbcTemplate(DataSources.dataSource(CFG.authJdbcUrl())).update("DELETE FROM authority WHERE user_id = ?", id);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class AuthAuthorityDaoSpringJdbc implements AuthAuthorityDao {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.authJdbcUrl()));
 
         return jdbcTemplate.queryForStream(
-                "SELECT * FROM \"user\"",
+                "SELECT * FROM authority",
                 AuthorityEntityRowMapper.instance
         ).collect(Collectors.toList());
     }

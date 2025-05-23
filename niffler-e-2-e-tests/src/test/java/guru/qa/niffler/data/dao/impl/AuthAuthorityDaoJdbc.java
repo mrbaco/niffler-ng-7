@@ -42,8 +42,6 @@ public class AuthAuthorityDaoJdbc implements AuthAuthorityDao {
                 }
 
                 authority.setId(generatedKey);
-
-                return authorities;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

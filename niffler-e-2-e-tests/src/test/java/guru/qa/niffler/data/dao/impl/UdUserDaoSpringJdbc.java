@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class UdUserDAOSpringJdbc implements UdUserDAO {
+public class UdUserDaoSpringJdbc implements UdUserDAO {
 
     private static final Config CFG = Config.getInstance();
 
@@ -77,8 +77,8 @@ public class UdUserDAOSpringJdbc implements UdUserDAO {
     }
 
     @Override
-    public void delete(UUID id) {
-        new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl())).update("DELETE FROM \"user\" WHERE id = ?", id);
+    public void deleteByUsername(String username) {
+        new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl())).update("DELETE FROM \"user\" WHERE username = ?", username);
     }
 
     @Override
