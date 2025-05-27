@@ -271,7 +271,7 @@ public class UserDbClient {
 
     @Deprecated
     public UserJson createUserSpringJdbcChainedTx(UserJson user) {
-        return chainedTxTemplate.execute(connection -> {
+        return chainedTxTemplate.execute(status -> {
             AuthUserEntity authUser = new AuthUserEntity();
 
             authUser.setUsername(user.username());
@@ -281,7 +281,7 @@ public class UserDbClient {
             authUser.setAccountNonLocked(true);
             authUser.setCredentialsNonExpired(true);
 
-            authUserDaoSpringJdbc.create(authUser);
+            authUserDaoJdbc.create(authUser);
 
             List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
                 AuthorityEntity authorityEntity = new AuthorityEntity();
@@ -292,25 +292,25 @@ public class UserDbClient {
                 return authorityEntity;
             }).collect(Collectors.toList());
 
-            authAuthorityDaoSpringJdbc.create(authorityEntities);
+            authAuthorityDaoJdbc.create(authorityEntities);
 
             if (user.error()) {
                 throw new RuntimeException("parameter `error` for user");
             }
 
-            return udUserDaoSpringJdbc.create(user.toUdUserEntity()).toJson();
+            return udUserDaoJdbc.create(user.toUdUserEntity()).toJson();
         });
     }
 
     @Deprecated
     public void deleteUserSpringJdbcChainedTx(UserJson user) {
-        chainedTxTemplate.execute(connection -> {
-            AuthUserEntity userEntity = authUserDaoSpringJdbc.findByUsername(user.username()).orElse(null);
+        chainedTxTemplate.execute(status -> {
+            AuthUserEntity userEntity = authUserDaoJdbc.findByUsername(user.username()).orElse(null);
 
             if (userEntity != null) {
-                authAuthorityDaoSpringJdbc.deleteByUserId(userEntity.getId());
-                udUserDaoSpringJdbc.deleteByUsername(user.username());
-                authUserDaoSpringJdbc.delete(userEntity.getId());
+                authAuthorityDaoJdbc.deleteByUserId(userEntity.getId());
+                udUserDaoJdbc.deleteByUsername(user.username());
+                authUserDaoJdbc.delete(userEntity.getId());
             }
 
             return user;
