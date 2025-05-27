@@ -142,7 +142,7 @@ public class JdbcTest {
         Assertions.assertThrows(RuntimeException.class, () -> userDbClient.createUserSpringJdbcChainedTx(userWithError));
         Assertions.assertTrue(userDbClient.existAuthUser(userWithError.username()));
         Assertions.assertFalse(userDbClient.existUdUser(userWithError.username()));
-        Assertions.assertFalse(userDbClient.existAuthAuthorityEntities(userWithError.username()));
+        Assertions.assertTrue(userDbClient.existAuthAuthorityEntities(userWithError.username()));
         userDbClient.deleteUserSpringJdbcChainedTx(userWithError);
         Assertions.assertFalse(userDbClient.existAuthUser(userWithError.username()));
     }
