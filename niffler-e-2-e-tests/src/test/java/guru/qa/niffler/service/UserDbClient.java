@@ -201,6 +201,10 @@ public class UserDbClient {
                     }).collect(Collectors.toList())
             );
 
+            if (user.error()) {
+                throw new RuntimeException("parameter `error` for user");
+            }
+
             authUserRepository.create(authUser);
 
             return udUserDaoSpringJdbc.create(user.toUdUserEntity()).toJson();
