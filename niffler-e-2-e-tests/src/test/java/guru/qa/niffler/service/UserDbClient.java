@@ -11,8 +11,10 @@ import guru.qa.niffler.data.dao.impl.AuthUserDaoSpringJdbc;
 import guru.qa.niffler.data.dao.impl.UdUserDaoJdbc;
 import guru.qa.niffler.data.dao.impl.UdUserDaoSpringJdbc;
 import guru.qa.niffler.data.entity.auth.AuthUserEntity;
+import guru.qa.niffler.data.entity.auth.Authority;
 import guru.qa.niffler.data.entity.auth.AuthorityEntity;
-import guru.qa.niffler.data.entity.auth.AuthorityEntity.Authority;
+import guru.qa.niffler.data.repository.AuthUserRepository;
+import guru.qa.niffler.data.repository.impl.AuthUserRepositoryJdbc;
 import guru.qa.niffler.data.tpl.JdbcTransactionTemplate;
 import guru.qa.niffler.data.tpl.XaTransactionTemplate;
 import guru.qa.niffler.model.UserJson;
@@ -20,10 +22,8 @@ import org.springframework.data.transaction.ChainedTransactionManager;
 import org.springframework.jdbc.support.JdbcTransactionManager;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +36,8 @@ public class UserDbClient {
     private static final Config CFG = Config.getInstance();
 
     private static final PasswordEncoder pe = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+
+    private final AuthUserRepository authUserRepository = new AuthUserRepositoryJdbc();
 
     private final AuthUserDao authUserDaoJdbc = new AuthUserDaoJdbc();
     private final AuthAuthorityDao authAuthorityDaoJdbc = new AuthAuthorityDaoJdbc();
@@ -103,7 +105,7 @@ public class UserDbClient {
             List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
                 AuthorityEntity authorityEntity = new AuthorityEntity();
 
-                authorityEntity.setUserId(authUser.getId());
+                authorityEntity.setUser(authUser);
                 authorityEntity.setAuthority(e);
 
                 return authorityEntity;
@@ -153,7 +155,7 @@ public class UserDbClient {
         List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
             AuthorityEntity authorityEntity = new AuthorityEntity();
 
-            authorityEntity.setUserId(authUser.getId());
+            authorityEntity.setUser(authUser);
             authorityEntity.setAuthority(e);
 
             return authorityEntity;
@@ -188,23 +190,22 @@ public class UserDbClient {
             authUser.setAccountNonExpired(true);
             authUser.setAccountNonLocked(true);
             authUser.setCredentialsNonExpired(true);
+            authUser.setAuthorities(
+                    Arrays.stream(Authority.values()).map(e -> {
+                        AuthorityEntity authorityEntity = new AuthorityEntity();
 
-            authUserDaoSpringJdbc.create(authUser);
+                        authorityEntity.setUser(authUser);
+                        authorityEntity.setAuthority(e);
 
-            List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
-                AuthorityEntity authorityEntity = new AuthorityEntity();
-
-                authorityEntity.setUserId(authUser.getId());
-                authorityEntity.setAuthority(e);
-
-                return authorityEntity;
-            }).collect(Collectors.toList());
+                        return authorityEntity;
+                    }).collect(Collectors.toList())
+            );
 
             if (user.error()) {
                 throw new RuntimeException("parameter `error` for user");
             }
 
-            authAuthorityDaoSpringJdbc.create(authorityEntities);
+            authUserRepository.create(authUser);
 
             return udUserDaoSpringJdbc.create(user.toUdUserEntity()).toJson();
         });
@@ -244,7 +245,7 @@ public class UserDbClient {
         List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
             AuthorityEntity authorityEntity = new AuthorityEntity();
 
-            authorityEntity.setUserId(authUser.getId());
+            authorityEntity.setUser(authUser);
             authorityEntity.setAuthority(e);
 
             return authorityEntity;
@@ -286,7 +287,7 @@ public class UserDbClient {
             List<AuthorityEntity> authorityEntities = Arrays.stream(Authority.values()).map(e -> {
                 AuthorityEntity authorityEntity = new AuthorityEntity();
 
-                authorityEntity.setUserId(authUser.getId());
+                authorityEntity.setUser(authUser);
                 authorityEntity.setAuthority(e);
 
                 return authorityEntity;
