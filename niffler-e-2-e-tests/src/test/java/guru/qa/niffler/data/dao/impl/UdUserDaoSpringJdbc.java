@@ -1,13 +1,14 @@
 package guru.qa.niffler.data.dao.impl;
 
+import guru.qa.niffler.config.Config;
 import guru.qa.niffler.data.dao.UdUserDAO;
 import guru.qa.niffler.data.entity.userdata.UdUserEntity;
 import guru.qa.niffler.data.mapper.UdUserEntityRowMapper;
+import guru.qa.niffler.data.tpl.DataSources;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
-import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
@@ -16,17 +17,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class UdUserDAOSpringJdbc implements UdUserDAO {
+public class UdUserDaoSpringJdbc implements UdUserDAO {
 
-    private final DataSource dataSource;
-
-    public UdUserDAOSpringJdbc(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    private static final Config CFG = Config.getInstance();
 
     @Override
     public UdUserEntity create(UdUserEntity user) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl()));
         KeyHolder kh = new GeneratedKeyHolder();
 
         jdbcTemplate.update(con -> {
@@ -55,7 +52,7 @@ public class UdUserDAOSpringJdbc implements UdUserDAO {
 
     @Override
     public Optional<UdUserEntity> findById(UUID id) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl()));
 
         return Optional.ofNullable(
                 jdbcTemplate.queryForObject(
@@ -68,7 +65,7 @@ public class UdUserDAOSpringJdbc implements UdUserDAO {
 
     @Override
     public Optional<UdUserEntity> findByUsername(String username) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl()));
 
         return Optional.ofNullable(
                 jdbcTemplate.queryForObject(
@@ -80,13 +77,13 @@ public class UdUserDAOSpringJdbc implements UdUserDAO {
     }
 
     @Override
-    public void delete(UUID id) {
-        new JdbcTemplate(dataSource).update("DELETE FROM \"user\" WHERE id = ?", id);
+    public void deleteByUsername(String username) {
+        new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl())).update("DELETE FROM \"user\" WHERE username = ?", username);
     }
 
     @Override
     public List<UdUserEntity> findAll() {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(DataSources.dataSource(CFG.userdataJdbcUrl()));
 
         return jdbcTemplate.queryForStream(
                 "SELECT * FROM \"user\"",
