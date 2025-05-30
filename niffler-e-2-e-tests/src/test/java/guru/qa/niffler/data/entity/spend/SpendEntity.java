@@ -1,6 +1,6 @@
 package guru.qa.niffler.data.entity.spend;
 
-import guru.qa.niffler.model.CurrencyValues;
+import guru.qa.niffler.data.entity.userdata.CurrencyValues;
 import guru.qa.niffler.model.SpendJson;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

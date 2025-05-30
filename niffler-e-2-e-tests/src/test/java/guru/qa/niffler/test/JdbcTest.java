@@ -6,7 +6,7 @@ import io.qameta.allure.Description;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static guru.qa.niffler.model.CurrencyValues.RUB;
+import static guru.qa.niffler.data.entity.userdata.CurrencyValues.RUB;
 
 public class JdbcTest {
 
